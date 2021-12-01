@@ -66,10 +66,6 @@ void Error_Handler(void);
 #define A0_GPIO_Port GPIOF
 #define A1_Pin GPIO_PIN_1
 #define A1_GPIO_Port GPIOF
-#define A2_Pin GPIO_PIN_2
-#define A2_GPIO_Port GPIOF
-#define A3_Pin GPIO_PIN_3
-#define A3_GPIO_Port GPIOF
 #define A4_Pin GPIO_PIN_4
 #define A4_GPIO_Port GPIOF
 #define A5_Pin GPIO_PIN_5
