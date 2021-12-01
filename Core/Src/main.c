@@ -97,25 +97,37 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+
   uint16_t fill = 0;
+  uint8_t increasing = 0;
   uint8_t direction = 0;
   while (1)
   {
 	  setPwmValue(fill);
-	  HAL_Delay(5);
+	  HAL_Delay(1);
 
-	  if (direction == 0) {
+	  if (increasing == 0) {
 	      fill++;
 
 		  if (fill == 2000) {
-			  direction = 1;
+			  increasing = 1;
 		  }
 	  } else {
 		  fill--;
 
 		  if (fill == 0) {
-			  direction = 0;
+			  increasing = 0;
+			  direction = (direction + 1) % 2;
 		  }
+	  }
+
+	  // Set direction for the motor.
+	  if (direction == 0) {
+		  HAL_GPIO_WritePin(GPIOF, GPIO_PIN_2, GPIO_PIN_SET);
+		  HAL_GPIO_WritePin(GPIOF, GPIO_PIN_3, GPIO_PIN_RESET);
+	  } else {
+		  HAL_GPIO_WritePin(GPIOF, GPIO_PIN_2, GPIO_PIN_RESET);
+		  HAL_GPIO_WritePin(GPIOF, GPIO_PIN_3, GPIO_PIN_SET);
 	  }
     /* USER CODE END WHILE */
 
