@@ -41,6 +41,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 TIM_HandleTypeDef htim9;
+TIM_HandleTypeDef htim10;
 
 /* USER CODE BEGIN PV */
 
@@ -50,6 +51,7 @@ TIM_HandleTypeDef htim9;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_TIM9_Init(void);
+static void MX_TIM10_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -65,6 +67,14 @@ void setLeftMotorPwmValue(uint16_t value)
 	__HAL_TIM_SET_COMPARE(&htim9, TIM_CHANNEL_1, value);
 }
 
+/**
+ * @param value from 0 to 2000
+ */
+void setRightMotorPwmValue(uint16_t value)
+{
+	__HAL_TIM_SET_COMPARE(&htim10, TIM_CHANNEL_1, value);
+}
+
 typedef enum
 {
   BACKWARD = 0,
@@ -77,12 +87,26 @@ void setLeftMotorDirection(MotorDirection direction)
 	HAL_GPIO_WritePin(GPIOF, GPIO_PIN_3, 1 - direction);
 }
 
+void setRightMotorDirection(MotorDirection direction)
+{
+	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_4, direction);
+	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, 1 - direction);
+}
+
 /**
  * @param speed value from -2000 to 2000
  */
 void setLeftMotorSpeed(int16_t speed) {
 	setLeftMotorDirection(speed >= 0 ? FORWARD : BACKWARD);
 	setLeftMotorPwmValue(abs(speed));
+}
+
+/**
+ * @param speed value from -2000 to 2000
+ */
+void setRightMotorSpeed(int16_t speed) {
+	setRightMotorDirection(speed >= 0 ? FORWARD : BACKWARD);
+	setRightMotorPwmValue(abs(speed));
 }
 
 /* USER CODE END 0 */
@@ -116,6 +140,7 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_TIM9_Init();
+  MX_TIM10_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -128,6 +153,7 @@ int main(void)
   while (1)
   {
 	  setLeftMotorSpeed(speed);
+	  setRightMotorSpeed(speed);
 	  HAL_Delay(1);
 
 	  if (increasing == 1) {
@@ -235,6 +261,52 @@ static void MX_TIM9_Init(void)
   /* USER CODE END TIM9_Init 2 */
   HAL_TIM_MspPostInit(&htim9);
   HAL_TIM_PWM_Start(&htim9, TIM_CHANNEL_1);
+}
+
+/**
+  * @brief TIM10 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM10_Init(void)
+{
+
+  /* USER CODE BEGIN TIM10_Init 0 */
+
+  /* USER CODE END TIM10_Init 0 */
+
+  TIM_OC_InitTypeDef sConfigOC = {0};
+
+  /* USER CODE BEGIN TIM10_Init 1 */
+
+  /* USER CODE END TIM10_Init 1 */
+  htim10.Instance = TIM10;
+  htim10.Init.Prescaler = 0;
+  htim10.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim10.Init.Period = 2000;
+  htim10.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim10.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim10) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_Init(&htim10) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 0;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim10, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM10_Init 2 */
+
+  /* USER CODE END TIM10_Init 2 */
+  HAL_TIM_MspPostInit(&htim10);
+  HAL_TIM_PWM_Start(&htim10, TIM_CHANNEL_1);
 
 }
 
@@ -258,6 +330,9 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3|GPIO_PIN_4, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOF, GPIO_PIN_2|GPIO_PIN_3, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
@@ -271,6 +346,13 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOG, LD3_Pin|LD4_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pins : PE3 PE4 */
+  GPIO_InitStruct.Pin = GPIO_PIN_3|GPIO_PIN_4;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
   /*Configure GPIO pins : A0_Pin A1_Pin A4_Pin A5_Pin
                            SDNRAS_Pin A6_Pin A7_Pin A8_Pin
