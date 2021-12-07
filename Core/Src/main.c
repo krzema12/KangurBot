@@ -56,10 +56,35 @@ static void MX_TIM9_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void setPwmValue(uint16_t value)
+
+/**
+ * @param value from 0 to 2000
+ */
+void setLeftMotorPwmValue(uint16_t value)
 {
 	__HAL_TIM_SET_COMPARE(&htim9, TIM_CHANNEL_1, value);
 }
+
+typedef enum
+{
+  BACKWARD = 0,
+  FORWARD
+} MotorDirection;
+
+void setLeftMotorDirection(MotorDirection direction)
+{
+	HAL_GPIO_WritePin(GPIOF, GPIO_PIN_2, direction);
+	HAL_GPIO_WritePin(GPIOF, GPIO_PIN_3, 1 - direction);
+}
+
+/**
+ * @param speed value from -2000 to 2000
+ */
+void setLeftMotorSpeed(int16_t speed) {
+	setLeftMotorDirection(speed >= 0 ? FORWARD : BACKWARD);
+	setLeftMotorPwmValue(abs(speed));
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -98,36 +123,25 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
-  uint16_t fill = 0;
+  int16_t speed = 0;
   uint8_t increasing = 0;
-  uint8_t direction = 0;
   while (1)
   {
-	  setPwmValue(fill);
+	  setLeftMotorSpeed(speed);
 	  HAL_Delay(1);
 
-	  if (increasing == 0) {
-	      fill++;
+	  if (increasing == 1) {
+	      speed++;
 
-		  if (fill == 2000) {
+		  if (speed == 2000) {
+			  increasing = 0;
+		  }
+	  } else {
+		  speed--;
+
+		  if (speed == -2000) {
 			  increasing = 1;
 		  }
-	  } else {
-		  fill--;
-
-		  if (fill == 0) {
-			  increasing = 0;
-			  direction = (direction + 1) % 2;
-		  }
-	  }
-
-	  // Set direction for the motor.
-	  if (direction == 0) {
-		  HAL_GPIO_WritePin(GPIOF, GPIO_PIN_2, GPIO_PIN_SET);
-		  HAL_GPIO_WritePin(GPIOF, GPIO_PIN_3, GPIO_PIN_RESET);
-	  } else {
-		  HAL_GPIO_WritePin(GPIOF, GPIO_PIN_2, GPIO_PIN_RESET);
-		  HAL_GPIO_WritePin(GPIOF, GPIO_PIN_3, GPIO_PIN_SET);
 	  }
     /* USER CODE END WHILE */
 
