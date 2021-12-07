@@ -257,10 +257,10 @@ static void MX_TIM9_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN TIM9_Init 2 */
-
+  HAL_TIM_PWM_Start(&htim9, TIM_CHANNEL_1);
   /* USER CODE END TIM9_Init 2 */
   HAL_TIM_MspPostInit(&htim9);
-  HAL_TIM_PWM_Start(&htim9, TIM_CHANNEL_1);
+
 }
 
 /**
@@ -303,11 +303,9 @@ static void MX_TIM10_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN TIM10_Init 2 */
-
+  HAL_TIM_PWM_Start(&htim10, TIM_CHANNEL_1);
   /* USER CODE END TIM10_Init 2 */
   HAL_TIM_MspPostInit(&htim10);
-  HAL_TIM_PWM_Start(&htim10, TIM_CHANNEL_1);
-
 }
 
 /**
