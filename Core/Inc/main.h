@@ -92,8 +92,6 @@ void Error_Handler(void);
 #define CSX_GPIO_Port GPIOC
 #define B1_Pin GPIO_PIN_0
 #define B1_GPIO_Port GPIOA
-#define MEMS_INT1_Pin GPIO_PIN_1
-#define MEMS_INT1_GPIO_Port GPIOA
 #define MEMS_INT2_Pin GPIO_PIN_2
 #define MEMS_INT2_GPIO_Port GPIOA
 #define B5_Pin GPIO_PIN_3
@@ -210,8 +208,6 @@ void Error_Handler(void);
 #define R2_GPIO_Port GPIOC
 #define D2_Pin GPIO_PIN_0
 #define D2_GPIO_Port GPIOD
-#define D3_Pin GPIO_PIN_1
-#define D3_GPIO_Port GPIOD
 #define G7_Pin GPIO_PIN_3
 #define G7_GPIO_Port GPIOD
 #define B2_Pin GPIO_PIN_6

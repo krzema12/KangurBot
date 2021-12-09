@@ -57,7 +57,55 @@ static void MX_TIM10_Init(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
+/* USER//	  setLeftMotorSpeed(speed);
+//	  setRightMotorSpeed(speed);
+//	  HAL_Delay(1);
+//
+//	  if (increasing == 1) {
+//	      speed++;
+//
+//		  if (speed == 2000) {
+//			  increasing = 0;
+//		  }
+//	  } else {
+//		  speed--;
+//
+//		  if (speed == -2000) {
+//			  increasing = 1;
+//		  }
+//	  } CODE BEGIN 0 */
+
+typedef enum
+{
+  WAITING_FOR_FIRST_EDGE = 0,
+  COUNTING_FIRST_PART,
+  PAUSE_BETWEEN,
+  COUNTING_SECOND_PART,
+} IrReadingState;
+
+IrReadingState irState  = WAITING_FOR_FIRST_EDGE;
+uint8_t irCounter = 0;
+uint8_t irCode = 0;
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+	if (irState == WAITING_FOR_FIRST_EDGE) {
+		irCounter = 0;
+	    irState = COUNTING_FIRST_PART;
+	} else if (irState == COUNTING_FIRST_PART) {
+		irState = PAUSE_BETWEEN;
+	} else if (irState == PAUSE_BETWEEN) {
+		irState = COUNTING_SECOND_PART;
+	} else if (irState == COUNTING_SECOND_PART) {
+		irState = WAITING_FOR_FIRST_EDGE;
+
+		if (irCounter != 2) {
+		irCode = irCounter;
+		}
+
+		irCounter = 0;
+	}
+}
 
 /**
  * @param value from 0 to 2000
@@ -83,14 +131,14 @@ typedef enum
 
 void setLeftMotorDirection(MotorDirection direction)
 {
-	HAL_GPIO_WritePin(GPIOF, GPIO_PIN_2, direction);
-	HAL_GPIO_WritePin(GPIOF, GPIO_PIN_3, 1 - direction);
+	HAL_GPIO_WritePin(GPIOF, GPIO_PIN_2, 1 - direction);
+	HAL_GPIO_WritePin(GPIOF, GPIO_PIN_3, direction);
 }
 
 void setRightMotorDirection(MotorDirection direction)
 {
-	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_4, direction);
-	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, 1 - direction);
+	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_4, 1 - direction);
+	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, direction);
 }
 
 /**
@@ -148,26 +196,28 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
-  int16_t speed = 0;
-  uint8_t increasing = 0;
+//  int16_t speed = 0;
+//  uint8_t increasing = 0;
   while (1)
   {
-	  setLeftMotorSpeed(speed);
-	  setRightMotorSpeed(speed);
-	  HAL_Delay(1);
+	  if (irCode > 0) {
+		  uint8_t thisIrCode = irCode;
+		  HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_SET);
 
-	  if (increasing == 1) {
-	      speed++;
-
-		  if (speed == 2000) {
-			  increasing = 0;
+		  if (thisIrCode < 5) {
+		      setLeftMotorSpeed(1800);
+		      setRightMotorSpeed(1800);
+		  } else {
+		      setLeftMotorSpeed(-1800);
+		      setRightMotorSpeed(-1800);
 		  }
-	  } else {
-		  speed--;
 
-		  if (speed == -2000) {
-			  increasing = 1;
-		  }
+		  HAL_Delay(100);
+		  HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_RESET);
+		  setLeftMotorSpeed(0);
+		  setRightMotorSpeed(0);
+
+		  irCode = 0;
 	  }
     /* USER CODE END WHILE */
 
@@ -306,6 +356,7 @@ static void MX_TIM10_Init(void)
   HAL_TIM_PWM_Start(&htim10, TIM_CHANNEL_1);
   /* USER CODE END TIM10_Init 2 */
   HAL_TIM_MspPostInit(&htim10);
+
 }
 
 /**
@@ -402,8 +453,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : B1_Pin MEMS_INT1_Pin MEMS_INT2_Pin TP_INT1_Pin */
-  GPIO_InitStruct.Pin = B1_Pin|MEMS_INT1_Pin|MEMS_INT2_Pin|TP_INT1_Pin;
+  /*Configure GPIO pins : B1_Pin MEMS_INT2_Pin TP_INT1_Pin */
+  GPIO_InitStruct.Pin = B1_Pin|MEMS_INT2_Pin|TP_INT1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_EVT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
@@ -490,9 +541,9 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(VBUS_HS_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : D13_Pin D14_Pin D15_Pin D0_Pin
-                           D1_Pin D2_Pin D3_Pin */
+                           D1_Pin D2_Pin */
   GPIO_InitStruct.Pin = D13_Pin|D14_Pin|D15_Pin|D0_Pin
-                          |D1_Pin|D2_Pin|D3_Pin;
+                          |D1_Pin|D2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
@@ -552,6 +603,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Alternate = GPIO_AF7_USART1;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : PD1 */
+  GPIO_InitStruct.Pin = GPIO_PIN_1;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+
   /*Configure GPIO pins : G7_Pin B2_Pin */
   GPIO_InitStruct.Pin = G7_Pin|B2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
@@ -582,6 +639,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   GPIO_InitStruct.Alternate = GPIO_AF12_FMC;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI1_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI1_IRQn);
 
 }
 
