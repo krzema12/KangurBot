@@ -70,6 +70,8 @@ typedef enum
 
 
 typedef enum {
+	NONE = 0,
+	FAILURE = 1,
 	RELEASE = 3,
 	VOLUME_UP = 4,
 	VOLUME_DOWN = 5,
@@ -85,10 +87,11 @@ IrReadingState irState  = WAITING_FOR_FIRST_EDGE;
 uint16_t firstPart;
 uint16_t pause;
 uint16_t secondPart;
-IRCode irCode = RELEASE;
+IRCode irCode = NONE;
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
+	// TODO check if raising or falling edge, each time
 	if (irState == WAITING_FOR_FIRST_EDGE) {
 		TIM3->CNT = 0;
 	    irState = COUNTING_FIRST_PART;
@@ -98,14 +101,23 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		irState = PAUSE_BETWEEN;
 	} else if (irState == PAUSE_BETWEEN) {
 		pause = TIM3->CNT;
-		TIM3->CNT = 0;
-		irState = COUNTING_SECOND_PART;
+
+		int16_t difference = abs((int16_t)firstPart - (int16_t)pause);
+		if (difference < 20) { // TODO calibrate
+			TIM3->CNT = 0;
+			irState = COUNTING_SECOND_PART;
+		} else {
+			// Something went wrong. Reset data receiving.
+			irState = WAITING_FOR_FIRST_EDGE;
+		}
 	} else if (irState == COUNTING_SECOND_PART) {
 		secondPart = TIM3->CNT;
 		irState = WAITING_FOR_FIRST_EDGE;
 
-		// TODO: Verify that first part and pause are of similar length.
 		irCode = firstPart/secondPart;
+	} else {
+		irState = WAITING_FOR_FIRST_EDGE;
+		irCode = FAILURE;
 	}
 }
 
@@ -175,7 +187,7 @@ int main(void)
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
 
-	HAL_Init();
+  HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -200,25 +212,35 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
-//  int16_t speed = 0;
-//  uint8_t increasing = 0;
   while (1)
   {
 	  if (irCode > 0) {
 		  IRCode thisIrCode = irCode;
 
-		  if (thisIrCode == RELEASE) {
-			  HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_RESET);
-			  setLeftMotorSpeed(0);
-			  setRightMotorSpeed(0);
-		  } else if (thisIrCode == UP) {
+		  if (thisIrCode == UP) {
 			  HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_SET);
 		      setLeftMotorSpeed(1800);
 		      setRightMotorSpeed(1800);
+		      HAL_Delay(500);
 		  } else if (thisIrCode == DOWN) {
 			  HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_SET);
 		      setLeftMotorSpeed(-1800);
 		      setRightMotorSpeed(-1800);
+		      HAL_Delay(500);
+		  } else if (thisIrCode == LEFT) {
+			  HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_SET);
+		      setLeftMotorSpeed(-1800);
+		      setRightMotorSpeed(1800);
+		      HAL_Delay(500);
+		  } else if (thisIrCode == RIGHT) {
+			  HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_SET);
+		      setLeftMotorSpeed(1800);
+		      setRightMotorSpeed(-1800);
+		      HAL_Delay(500);
+		  } else {
+			  HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_RESET);
+			  setLeftMotorSpeed(0);
+			  setRightMotorSpeed(0);
 		  }
 	  }
     /* USER CODE END WHILE */
