@@ -40,6 +40,7 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim9;
 TIM_HandleTypeDef htim10;
 
@@ -50,6 +51,7 @@ TIM_HandleTypeDef htim10;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_TIM3_Init(void);
 static void MX_TIM9_Init(void);
 static void MX_TIM10_Init(void);
 /* USER CODE BEGIN PFP */
@@ -57,23 +59,6 @@ static void MX_TIM10_Init(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
-/* USER//	  setLeftMotorSpeed(speed);
-//	  setRightMotorSpeed(speed);
-//	  HAL_Delay(1);
-//
-//	  if (increasing == 1) {
-//	      speed++;
-//
-//		  if (speed == 2000) {
-//			  increasing = 0;
-//		  }
-//	  } else {
-//		  speed--;
-//
-//		  if (speed == -2000) {
-//			  increasing = 1;
-//		  }
-//	  } CODE BEGIN 0 */
 
 typedef enum
 {
@@ -83,27 +68,44 @@ typedef enum
   COUNTING_SECOND_PART,
 } IrReadingState;
 
+
+typedef enum {
+	RELEASE = 3,
+	VOLUME_UP = 4,
+	VOLUME_DOWN = 5,
+	UP = 6,
+	DOWN = 7,
+	MUTE = 8,
+	RIGHT = 9,
+	LEFT = 10,
+	SOURCE = 11,
+} IRCode;
+
 IrReadingState irState  = WAITING_FOR_FIRST_EDGE;
-uint8_t irCounter = 0;
-uint8_t irCode = 0;
+uint16_t firstPart;
+uint16_t pause;
+uint16_t secondPart;
+IRCode irCode = RELEASE;
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	if (irState == WAITING_FOR_FIRST_EDGE) {
-		irCounter = 0;
+		TIM3->CNT = 0;
 	    irState = COUNTING_FIRST_PART;
 	} else if (irState == COUNTING_FIRST_PART) {
+		firstPart = TIM3->CNT;
+		TIM3->CNT = 0;
 		irState = PAUSE_BETWEEN;
 	} else if (irState == PAUSE_BETWEEN) {
+		pause = TIM3->CNT;
+		TIM3->CNT = 0;
 		irState = COUNTING_SECOND_PART;
 	} else if (irState == COUNTING_SECOND_PART) {
+		secondPart = TIM3->CNT;
 		irState = WAITING_FOR_FIRST_EDGE;
 
-		if (irCounter != 2) {
-		irCode = irCounter;
-		}
-
-		irCounter = 0;
+		// TODO: Verify that first part and pause are of similar length.
+		irCode = firstPart/secondPart;
 	}
 }
 
@@ -172,7 +174,8 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+
+	HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -189,6 +192,7 @@ int main(void)
   MX_GPIO_Init();
   MX_TIM9_Init();
   MX_TIM10_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -201,23 +205,21 @@ int main(void)
   while (1)
   {
 	  if (irCode > 0) {
-		  uint8_t thisIrCode = irCode;
-		  HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_SET);
+		  IRCode thisIrCode = irCode;
 
-		  if (thisIrCode < 5) {
+		  if (thisIrCode == RELEASE) {
+			  HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_RESET);
+			  setLeftMotorSpeed(0);
+			  setRightMotorSpeed(0);
+		  } else if (thisIrCode == UP) {
+			  HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_SET);
 		      setLeftMotorSpeed(1800);
 		      setRightMotorSpeed(1800);
-		  } else {
+		  } else if (thisIrCode == DOWN) {
+			  HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_SET);
 		      setLeftMotorSpeed(-1800);
 		      setRightMotorSpeed(-1800);
 		  }
-
-		  HAL_Delay(100);
-		  HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_RESET);
-		  setLeftMotorSpeed(0);
-		  setRightMotorSpeed(0);
-
-		  irCode = 0;
 	  }
     /* USER CODE END WHILE */
 
@@ -268,6 +270,51 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief TIM3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM3_Init(void)
+{
+
+  /* USER CODE BEGIN TIM3_Init 0 */
+
+  /* USER CODE END TIM3_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM3_Init 1 */
+
+  /* USER CODE END TIM3_Init 1 */
+  htim3.Instance = TIM3;
+  htim3.Init.Prescaler = 100;
+  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim3.Init.Period = 65535;
+  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM3_Init 2 */
+  HAL_TIM_Base_Start(&htim3);
+  /* USER CODE END TIM3_Init 2 */
+
 }
 
 /**

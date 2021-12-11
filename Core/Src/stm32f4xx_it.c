@@ -178,18 +178,13 @@ void PendSV_Handler(void)
   /* USER CODE END PendSV_IRQn 1 */
 }
 
-extern uint8_t irState;
-extern uint8_t irCounter;
-
 /**
   * @brief This function handles System tick timer.
   */
 void SysTick_Handler(void)
 {
   /* USER CODE BEGIN SysTick_IRQn 0 */
-  if (irState == 1) {
-    irCounter++;
-  }
+
   /* USER CODE END SysTick_IRQn 0 */
   HAL_IncTick();
   /* USER CODE BEGIN SysTick_IRQn 1 */
