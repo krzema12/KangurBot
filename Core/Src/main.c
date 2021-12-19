@@ -95,10 +95,12 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	if (irState == WAITING_FOR_FIRST_EDGE) {
 		TIM3->CNT = 0;
 	    irState = COUNTING_FIRST_PART;
+	    irCode = NONE;
 	} else if (irState == COUNTING_FIRST_PART) {
 		firstPart = TIM3->CNT;
 		TIM3->CNT = 0;
 		irState = PAUSE_BETWEEN;
+		irCode = NONE;
 	} else if (irState == PAUSE_BETWEEN) {
 		pause = TIM3->CNT;
 
@@ -106,14 +108,15 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		if (difference < 20) { // TODO calibrate
 			TIM3->CNT = 0;
 			irState = COUNTING_SECOND_PART;
+			irCode = NONE;
 		} else {
 			// Something went wrong. Reset data receiving.
 			irState = WAITING_FOR_FIRST_EDGE;
+			irCode = FAILURE;
 		}
 	} else if (irState == COUNTING_SECOND_PART) {
 		secondPart = TIM3->CNT;
 		irState = WAITING_FOR_FIRST_EDGE;
-
 		irCode = firstPart/secondPart;
 	} else {
 		irState = WAITING_FOR_FIRST_EDGE;
@@ -214,29 +217,30 @@ int main(void)
 
   while (1)
   {
-	  if (irCode > 0) {
+	  if (irCode != NONE) {
 		  IRCode thisIrCode = irCode;
+		  irCode = NONE;
 
 		  if (thisIrCode == UP) {
 			  HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_SET);
 		      setLeftMotorSpeed(1800);
 		      setRightMotorSpeed(1800);
-		      HAL_Delay(500);
+		      HAL_Delay(200);
 		  } else if (thisIrCode == DOWN) {
 			  HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_SET);
 		      setLeftMotorSpeed(-1800);
 		      setRightMotorSpeed(-1800);
-		      HAL_Delay(500);
+		      HAL_Delay(200);
 		  } else if (thisIrCode == LEFT) {
 			  HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_SET);
 		      setLeftMotorSpeed(-1800);
 		      setRightMotorSpeed(1800);
-		      HAL_Delay(500);
+		      HAL_Delay(200);
 		  } else if (thisIrCode == RIGHT) {
 			  HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_SET);
 		      setLeftMotorSpeed(1800);
 		      setRightMotorSpeed(-1800);
-		      HAL_Delay(500);
+		      HAL_Delay(200);
 		  } else {
 			  HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_RESET);
 			  setLeftMotorSpeed(0);
