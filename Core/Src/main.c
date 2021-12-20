@@ -240,6 +240,16 @@ int main(void)
 		  setLeftMotorSpeed(1800);
 		  setRightMotorSpeed(-1800);
 		  HAL_Delay(200);
+	  } else if (thisIrCode == VOLUME_UP) {
+		  HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_SET);
+		  setLeftMotorSpeed(1400);
+		  setRightMotorSpeed(1400);
+		  HAL_Delay(200);
+	  } else if (thisIrCode == VOLUME_DOWN) {
+		  HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_SET);
+		  setLeftMotorSpeed(-1400);
+		  setRightMotorSpeed(-1400);
+		  HAL_Delay(200);
 	  } else {
 		  HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_RESET);
 		  setLeftMotorSpeed(0);
