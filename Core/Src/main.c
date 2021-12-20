@@ -217,35 +217,33 @@ int main(void)
 
   while (1)
   {
-	  if (irCode != NONE) {
-		  IRCode thisIrCode = irCode;
-		  irCode = NONE;
+	  IRCode thisIrCode = irCode;
+	  irCode = NONE;
 
-		  if (thisIrCode == UP) {
-			  HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_SET);
-		      setLeftMotorSpeed(1800);
-		      setRightMotorSpeed(1800);
-		      HAL_Delay(200);
-		  } else if (thisIrCode == DOWN) {
-			  HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_SET);
-		      setLeftMotorSpeed(-1800);
-		      setRightMotorSpeed(-1800);
-		      HAL_Delay(200);
-		  } else if (thisIrCode == LEFT) {
-			  HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_SET);
-		      setLeftMotorSpeed(-1800);
-		      setRightMotorSpeed(1800);
-		      HAL_Delay(200);
-		  } else if (thisIrCode == RIGHT) {
-			  HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_SET);
-		      setLeftMotorSpeed(1800);
-		      setRightMotorSpeed(-1800);
-		      HAL_Delay(200);
-		  } else {
-			  HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_RESET);
-			  setLeftMotorSpeed(0);
-			  setRightMotorSpeed(0);
-		  }
+	  if (thisIrCode == UP) {
+		  HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_SET);
+		  setLeftMotorSpeed(1800);
+		  setRightMotorSpeed(1800);
+		  HAL_Delay(200);
+	  } else if (thisIrCode == DOWN) {
+		  HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_SET);
+		  setLeftMotorSpeed(-1800);
+		  setRightMotorSpeed(-1800);
+		  HAL_Delay(200);
+	  } else if (thisIrCode == LEFT) {
+		  HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_SET);
+		  setLeftMotorSpeed(-1800);
+		  setRightMotorSpeed(1800);
+		  HAL_Delay(200);
+	  } else if (thisIrCode == RIGHT) {
+		  HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_SET);
+		  setLeftMotorSpeed(1800);
+		  setRightMotorSpeed(-1800);
+		  HAL_Delay(200);
+	  } else {
+		  HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_RESET);
+		  setLeftMotorSpeed(0);
+		  setRightMotorSpeed(0);
 	  }
     /* USER CODE END WHILE */
 
